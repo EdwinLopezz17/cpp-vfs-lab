@@ -1,7 +1,3 @@
-//
-// Created by edwin on 4/12/26.
-//
-
 #include "Node.h"
 
 namespace VFS {
@@ -30,4 +26,4 @@ namespace VFS {
     }
 
 
-} // VFS
+}

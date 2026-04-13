@@ -1,12 +1,7 @@
-//
-// Created by edwin on 4/12/26.
-//
-
 #ifndef VIRTUALFILES_NODE_H
 #define VIRTUALFILES_NODE_H
 
 #include <string>
-#include <vector>
 #include <map>
 #include <memory>
 
@@ -26,6 +21,6 @@ namespace VFS {
         std::string getFullPath() const;
     };
 
-} // VFS
+}
 
 #endif //VIRTUALFILES_NODE_H
