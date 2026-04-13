@@ -47,9 +47,55 @@ void handleCd(const std::string&arg, NodePtr& currentDir) {
 void handlePwd(const std::string&, const NodePtr& currentDir) {
     std::cout<<currentDir->getFullPath()<<"\n";
 }
+void handleRm(const std::string&arg, NodePtr& currentDir) {
+    if (arg.empty()) {
+        std::cout<<"Error: Name required\n";
+        return;
+    }
+    if (currentDir->children.contains(arg)) {
+        currentDir->children.erase(arg);
+    }else {
+        std::cout <<"Error: No such file or directory\n";
+    }
+}
+void handleClear(const std::string&, NodePtr&) {
+    std::cout << "\033[2J\033[1;1H";
+}
+void handleStat(const std::string& arg, NodePtr& currentDir) {
+    if (arg.empty() || !currentDir->children.contains(arg)) {
+        std::cout<<"Error: Invalid node\n";
+        return;
+    }
+    auto node = currentDir->children[arg];
+    std::cout << " File: " << node->name <<"\n";
+    std::cout << " Type: " << (node->isDirectory ? "Directory" : "Regular File") << "\n";
+    if (!node->isDirectory) {
+        std::cout <<" Size: "<<node->content.length()<<" bytes\n";
+    }
+}
+void searchRecursive(NodePtr node, const std::string& target, const std::string& currentPath) {
+    if (node->name == target) {
+        std::cout<<currentPath << (currentPath == "/" ? "": "/") << node->name <<"\n";
+    }
+    for (auto const& [name, child] : node->children) {
+        searchRecursive(child, target, currentPath == "/" ? "/" : currentPath + "/" + node->name);
+    }
+}
+void handleFind(const std::string& arg, NodePtr& currentDir) {
+    if (arg.empty()) return;
+    searchRecursive(currentDir, arg, currentDir->getFullPath());
+}
+
+void showHelp(const CommandMap& commands) {
+    std::cout<<"Available commands: ";
+    for (auto it = commands.begin(); it != commands.end(); ++it) {
+        std::cout << it->first << (std::next(it) == commands.end() ? "" : ", ");
+    }
+    std::cout<<", exit\n";
+}
 
 int main() {
-    auto root = std::make_shared<VFS::Node>("/", true);
+    const auto root = std::make_shared<VFS::Node>("/", true);
     NodePtr currentDir = root;
 
     CommandMap commands = {
@@ -57,12 +103,16 @@ int main() {
         {"touch", handleTouch},
         {"ls", handleLs},
         {"cd", handleCd},
-        {"pwd", handlePwd}
+        {"pwd", handlePwd},
+        {"rm", handleRm},
+        {"clear", handleClear},
+        {"stat", handleStat},
+        {"find", handleFind}
     };
 
     std::string line;
     std::cout<<"VFS Simulator (Refactored)\n";
-    std::cout<<"Commands: mkdir, touch, ls, cd, pwd, exit\n";
+    showHelp(commands);
 
     while (true) {
         std::cout << "\033[1;32muser@vfs\033[0m:\033[1;34m" << currentDir->getFullPath() << "\033[0m$ ";
