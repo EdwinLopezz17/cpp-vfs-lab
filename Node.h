@@ -11,16 +11,16 @@ namespace VFS {
         std::string name;
         bool isDirectory;
         std::string content;
+        Node* parent;
 
-        std::weak_ptr<Node> parent;
-        std::map<std::string, std::shared_ptr<Node>> children;
+        std::map<std::string, Node*> children;
 
-        Node(std::string name, bool isDirectory, std::shared_ptr<Node> p = nullptr);
+        Node(std::string name, bool isDirectory, Node* parent = nullptr);
+        ~Node();
 
-        void addChild(std::shared_ptr<Node> child);
+        void addChild(Node* child);
         std::string getFullPath() const;
     };
-
 }
 
-#endif //VIRTUALFILES_NODE_H
+#endif

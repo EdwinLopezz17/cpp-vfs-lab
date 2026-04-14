@@ -6,37 +6,36 @@
 #include <functional>
 #include "Node.h"
 
-using NodePtr = std::shared_ptr<VFS::Node>;
-using CommandMap = std::map<std::string, std::function<void(const std::string&, NodePtr&)>>;
+using CommandMap = std::map<std::string, std::function<void(const std::string&, VFS::Node* &)>>;
 
-void handleMkdir(const std::string& arg, NodePtr& currentDir){
+void handleMkdir(const std::string& arg, VFS::Node*& currentDir){
     if (arg.empty()) {
         std::cout<<"Error: Directory name is empty\n";
         return;
     }
-    auto newDir = std::make_shared<VFS::Node>(arg, true, currentDir);
+    VFS::Node* newDir = new VFS::Node(arg, true, currentDir);
     currentDir->addChild(newDir);
 }
-void handleTouch(const std::string&arg, NodePtr& currentDir) {
+void handleTouch(const std::string&arg, VFS::Node*& currentDir) {
     if (arg.empty()) {
         std::cout<<"Error: file name is empty\n";
         return;
     }
-    auto newFile = std::make_shared<VFS::Node>(arg, false, currentDir);
+    VFS::Node* newFile = new VFS::Node(arg, false, currentDir);
     currentDir->addChild(newFile);
 }
-void handleLs(const std::string&, const NodePtr& currentDir) {
+void handleLs(const std::string&, VFS::Node*& currentDir) {
     for (auto const& [name, node] : currentDir->children) {
         std::cout<<(node->isDirectory ? "[DIR] ":"[FILE] ")<<name<<"\n";
     }
 }
-void handleCd(const std::string&arg, NodePtr& currentDir) {
+void handleCd(const std::string&arg, VFS::Node*& currentDir) {
     if (arg.empty()) {
         std::cout<<"Error: Directory name is empty\n";
     }
     if (arg == "..") {
-        if (!currentDir->parent.expired()) {
-            currentDir = currentDir->parent.lock();
+        if (currentDir->parent != nullptr) {
+            currentDir = currentDir->parent;
         }
     }else if (currentDir->children.contains(arg) && currentDir->children[arg]->isDirectory){
         currentDir = currentDir->children[arg];
@@ -44,36 +43,39 @@ void handleCd(const std::string&arg, NodePtr& currentDir) {
         std::cout<<"Error: Directory not found\n";
     }
 }
-void handlePwd(const std::string&, const NodePtr& currentDir) {
+void handlePwd(const std::string&, VFS::Node*& currentDir) {
     std::cout<<currentDir->getFullPath()<<"\n";
 }
-void handleRm(const std::string&arg, NodePtr& currentDir) {
+void handleRm(const std::string&arg, VFS::Node*& currentDir) {
     if (arg.empty()) {
         std::cout<<"Error: Name required\n";
         return;
     }
     if (currentDir->children.contains(arg)) {
+        VFS::Node* toDelete = currentDir->children[arg];
         currentDir->children.erase(arg);
+        delete toDelete;
     }else {
         std::cout <<"Error: No such file or directory\n";
     }
 }
-void handleClear(const std::string&, NodePtr&) {
+void handleClear(const std::string&, VFS::Node*&) {
     std::cout << "\033[2J\033[1;1H";
 }
-void handleStat(const std::string& arg, NodePtr& currentDir) {
+void handleStat(const std::string& arg, VFS::Node*& currentDir) {
     if (arg.empty() || !currentDir->children.contains(arg)) {
         std::cout<<"Error: Invalid node\n";
         return;
     }
-    auto node = currentDir->children[arg];
-    std::cout << " File: " << node->name <<"\n";
+    VFS::Node* node = currentDir->children[arg];
     std::cout << " Type: " << (node->isDirectory ? "Directory" : "Regular File") << "\n";
+    std::cout << " File: " << node->name <<"\n";
     if (!node->isDirectory) {
         std::cout <<" Size: "<<node->content.length()<<" bytes\n";
+        std::cout <<" Content: " <<node->content <<"\n";
     }
 }
-void searchRecursive(NodePtr node, const std::string& target, const std::string& currentPath) {
+void searchRecursive(VFS::Node* node, const std::string& target, const std::string& currentPath) {
     if (node->name == target) {
         std::cout<<currentPath << (currentPath == "/" ? "": "/") << node->name <<"\n";
     }
@@ -81,7 +83,7 @@ void searchRecursive(NodePtr node, const std::string& target, const std::string&
         searchRecursive(child, target, currentPath == "/" ? "/" : currentPath + "/" + node->name);
     }
 }
-void handleFind(const std::string& arg, NodePtr& currentDir) {
+void handleFind(const std::string& arg, VFS::Node*& currentDir) {
     if (arg.empty()) return;
     searchRecursive(currentDir, arg, currentDir->getFullPath());
 }
@@ -95,8 +97,8 @@ void showHelp(const CommandMap& commands) {
 }
 
 int main() {
-    const auto root = std::make_shared<VFS::Node>("/", true);
-    NodePtr currentDir = root;
+    VFS::Node* root = new VFS::Node("/",true,nullptr);
+    VFS::Node* currentDir = root;
 
     CommandMap commands = {
         {"mkdir",handleMkdir},
