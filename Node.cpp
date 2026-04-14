@@ -1,5 +1,5 @@
 #include "Node.h"
-
+#include <iostream>
 namespace VFS {
     Node::Node(std::string name, bool isDirectory, Node* parent) {
         this->name = name;
@@ -28,5 +28,12 @@ namespace VFS {
         std::string parentPath = parent->getFullPath();
         if (parentPath == "/") return "/" + name;
         return parentPath + "/" + name;
+    }
+    void Node::setContent(const std::string& newContent) {
+        if (!isDirectory) {
+            content = newContent;
+        }else {
+            std::cout << "Error: Cannot write content to a directory.\n";
+        }
     }
 }

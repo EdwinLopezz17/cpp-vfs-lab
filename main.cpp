@@ -87,6 +87,46 @@ void handleFind(const std::string& arg, VFS::Node*& currentDir) {
     if (arg.empty()) return;
     searchRecursive(currentDir, arg, currentDir->getFullPath());
 }
+void handleEcho(const std::string& arg, VFS::Node*& currentDir) {
+    size_t firstQuote = arg.find('"');
+    size_t lastQuote = arg.find_last_of('"');
+
+    if (firstQuote == std::string::npos || lastQuote == std::string::npos || firstQuote == lastQuote) {
+        std::cout <<"Usage: echo \"text content\" filename\n";
+        return;
+    }
+    std::string text = arg.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+    std::string filename = arg.substr(lastQuote + 1);
+    filename.erase(0, filename.find_first_not_of(" "));
+
+    if (currentDir->children.contains(filename)) {
+        VFS::Node* file = currentDir->children[filename];
+        if (!file->isDirectory) {
+            file->setContent(text);
+        }else {
+            std::cout<<"Error: "<<filename<<" is a directory\n";
+        }
+    }else {
+        std::cout << "Error: File not found. Use 'touch' to create it first.\n";
+    }
+}
+void handleCat(const std::string arg, VFS::Node*& currentDir) {
+    if (arg.empty()) {
+        std::cout<<"Usage: car <filename>\n";
+        return;
+    }
+
+    if (currentDir->children.contains(arg)) {
+        VFS::Node* file = currentDir->children[arg];
+        if (!file->isDirectory) {
+            std::cout << file->content<<"\n";
+        }else {
+            std::cout << "Error: "<<arg<<" is a directory\n";
+        }
+    }else {
+        std::cout<<"Error: File not found\n";
+    }
+}
 
 void showHelp(const CommandMap& commands) {
     std::cout<<"Available commands: ";
@@ -109,7 +149,9 @@ int main() {
         {"rm", handleRm},
         {"clear", handleClear},
         {"stat", handleStat},
-        {"find", handleFind}
+        {"find", handleFind},
+        {"echo", handleEcho},
+        {"cat", handleCat}
     };
 
     std::string line;
@@ -124,7 +166,9 @@ int main() {
 
         std::stringstream ss(line);
         std::string cmdName, arg;
-        ss >> cmdName >> arg;
+        ss >> cmdName;
+
+        std::getline(ss >> std::ws, arg);
 
         if (commands.contains(cmdName)) {
             commands[cmdName](arg, currentDir);

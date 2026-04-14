@@ -20,6 +20,7 @@ namespace VFS {
 
         void addChild(Node* child);
         std::string getFullPath() const;
+        void setContent(const std::string& newContent);
     };
 }
 
